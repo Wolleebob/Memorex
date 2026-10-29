@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MemorEx - Gerenciador de Tarefas</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .screen {
+    display: none;
+    padding: 40px 35px;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .screen.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  h2 {
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 26px;
+  }
+
+  .subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 25px;
+  }
+
+  .form-group {
+    margin-bottom: 18px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    color: #555;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: #667eea;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+    margin-top: 8px;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .btn:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background: #f0f0f0;
+    color: #555;
+  }
+
+  .btn-secondary:hover {
+    background: #e0e0e0;
+    box-shadow: none;
+  }
+
+  .link-text {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #666;
+  }
+
+  .link-text a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .link-text a:hover {
+    text-decoration: underline;
+  }
+
+  .message {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 15px;
+    display: none;
+  }
+
+  .message.error {
+    background: #fee;
+    color: #c33;
+    border: 1px solid #fcc;
+  }
+
+  .message.success {
+    background: #efe;
+    color: #2a7;
+    border: 1px solid #cfc;
+  }
+
+  .message.show {
+    display: block;
+  }
+
+  /* Header da tela de tarefas */
+  .tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .tasks-header h2 {
+    margin: 0;
+    font-size: 22px;
+  }
+
+  .user-badge {
+    background: #eef;
+    color: #667eea;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Lista de tarefas */
+  .task-list {
+    max-height: 320px;
+    overflow-y: auto;
+    margin-top: 20px;
+  }
+
+  .task-item {
+    background: #f9f9fc;
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .task-item.concluida {
+    border-left-color: #2a7;
+    opacity: 0.7;
+  }
+
+  .task-item.concluida .task-title {
+    text-decoration: line-through;
+    color: #999;
+  }
+
+  .task-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .task-title {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+    word-wrap: break-word;
+  }
+
+  .task-desc {
+    font-size: 13px;
+    color: #777;
+    word-wrap: break-word;
+  }
+
+  .task-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .task-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+
+  .task-actions button:hover {
+    background: #eee;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: #999;
+    padding: 30px 10px;
+    font-size: 14px;
+  }
+
+  .empty-state .icon {
+    font-size: 40px;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .add-task-form {
+    background: #f9f9fc;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+
+  .add-task-form .form-group {
+    margin-bottom: 10px;
+  }
+
+  .add-task-form input,
+  .add-task-form textarea {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .add-task-form .btn {
+    margin-top: 4px;
+    padding: 10px;
+    font-size: 15px;
+  }
+
+  .logout-btn {
+    background: none;
+    border: none;
+    color: #c33;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+
+  .logout-btn:hover {
+    background: #fee;
+  }
+
+  /* Scrollbar personalizada */
+  .task-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  .task-list::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 10px;
+  }
+  .task-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ==================== TELA DE LOGIN ==================== -->
+  <div class="screen active" id="screen-login">
+    <h2>🔐 Entrar no MemorEx</h2>
+    <p class="subtitle">Acesse sua conta para gerenciar suas tarefas</p>
+
+    <div class="message error" id="login-error"></div>
+
+    <form id="form-login">
+      <div class="form-group">
+        <label for="login-email">E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" required>
+      </div>
+      <div class="form-group">
+        <label for="login-senha">Senha</label>
+        <input type="password" id="login-senha" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn">Entrar</button>
+    </form>
+
+    <p class="link-text">
+      Não tem conta? <a onclick="mostrarTela('cadastro')">Cadastre-se</a>
+    </p>
+  </div>
+
+  <!-- ==================== TELA DE CADASTRO ==================== -->
+  <div class="screen" id="screen-cadastro">
+    <h2>📝 Criar Conta</h2>
+    <p class="subtitle">Cadastre-se para começar a usar o MemorEx</p>
+
+    <div class="message error" id="cadastro-error"></div>
+    <div class="message success" id="cadastro-success"></div>
+
+    <form id="form-cadastro">
+      <div class="form-group">
+        <label for="cad-nome">Nome completo</label>
+        <input type="text" id="cad-nome" placeholder="Seu nome" required>
+      </div>
+      <div class="form-group">
+        <label for="cad-email">E-mail</label>
+        <input type="email" id="cad-email" placeholder="seu@email.com" required>
+      </div>
+      <div class="form-group">
+        <label for="cad-senha">Senha</label>
+        <input type="password" id="cad-senha" placeholder="Mínimo 4 caracteres" required minlength="4">
+      </div>
+      <div class="form-group">
+        <label for="cad-senha2">Confirmar senha</label>
+        <input type="password" id="cad-senha2" placeholder="Repita a senha" required minlength="4">
+      </div>
+      <button type="submit" class="btn">Cadastrar</button>
+    </form>
+
+    <p class="link-text">
+      Já tem conta? <a onclick="mostrarTela('login')">Fazer login</a>
+    </p>
+  </div>
+
+  <!-- ==================== TELA DE TAREFAS ==================== -->
+  <div class="screen" id="screen-tarefas">
+    <div class="tasks-header">
+      <div>
+        <h2>📋 Minhas Tarefas</h2>
+        <span class="user-badge" id="user-badge">Olá!</span>
+      </div>
+      <button class="logout-btn" onclick="fazerLogout()">Sair</button>
+    </div>
+
+    <div class="message error" id="task-error"></div>
+    <div class="message success" id="task-success"></div>
+
+    <!-- Formulário de nova tarefa -->
+    <form class="add-task-form" id="form-task">
+      <div class="form-group">
+        <input type="text" id="task-titulo" placeholder="Título da tarefa" required maxlength="60">
+      </div>
+      <div class="form-group">
+        <textarea id="task-desc" placeholder="Descrição (opcional)" maxlength="200"></textarea>
+      </div>
+      <button type="submit" class="btn">➕ Adicionar Tarefa</button>
+    </form>
+
+    <!-- Lista de tarefas -->
+    <div class="task-list" id="task-list">
+      <div class="empty-state" id="empty-state">
+        <span class="icon">📭</span>
+        Nenhuma tarefa cadastrada ainda.<br>Adicione sua primeira tarefa acima!
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ==================== ESTADO / "BANCO DE DADOS" ====================
+  // Simulamos um banco de dados usando localStorage
+  const DB = {
+    getUsuarios() {
+      return JSON.parse(localStorage.getItem('memorex_usuarios') || '[]');
+    },
+    salvarUsuarios(usuarios) {
+      localStorage.setItem('memorex_usuarios', JSON.stringify(usuarios));
+    },
+    getTarefas(email) {
+      const todas = JSON.parse(localStorage.getItem('memorex_tarefas') || '{}');
+      return todas[email] || [];
+    },
+    salvarTarefas(email, tarefas) {
+      const todas = JSON.parse(localStorage.getItem('memorex_tarefas') || '{}');
+      todas[email] = tarefas;
+      localStorage.setItem('memorex_tarefas', JSON.stringify(todas));
+    },
+    getSessao() {
+      return localStorage.getItem('memorex_sessao');
+    },
+    setSessao(email) {
+      localStorage.setItem('memorex_sessao', email);
+    },
+    limparSessao() {
+      localStorage.removeItem('memorex_sessao');
+    }
+  };
+
+  let usuarioAtual = null;
+
+  // ==================== NAVEGAÇÃO ENTRE TELAS ====================
+  function mostrarTela(nome) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + nome).classList.add('active');
+    limparMensagens();
+  }
+
+  function limparMensagens() {
+    document.querySelectorAll('.message').forEach(m => {
+      m.classList.remove('show');
+      m.textContent = '';
+    });
+  }
+
+  function mostrarMensagem(id, texto, tipo) {
+    const el = document.getElementById(id);
+    el.textContent = texto;
+    el.className = 'message ' + tipo + ' show';
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  // ==================== CADASTRO DE USUÁRIO ====================
+  document.getElementById('form-cadastro').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const nome = document.getElementById('cad-nome').value.trim();
+    const email = document.getElementById('cad-email').value.trim().toLowerCase();
+    const senha = document.getElementById('cad-senha').value;
+    const senha2 = document.getElementById('cad-senha2').value;
+
+    if (senha !== senha2) {
+      mostrarMensagem('cadastro-error', 'As senhas não coincidem.', 'error');
+      return;
+    }
+
+    const usuarios = DB.getUsuarios();
+
+    if (usuarios.some(u => u.email === email)) {
+      mostrarMensagem('cadastro-error', 'Este e-mail já está cadastrado.', 'error');
+      return;
+    }
+
+    usuarios.push({ nome, email, senha });
+    DB.salvarUsuarios(usuarios);
+
+    mostrarMensagem('cadastro-success', 'Cadastro realizado com sucesso! Redirecionando...', 'success');
+
+    setTimeout(() => {
+      document.getElementById('form-cadastro').reset();
+      mostrarTela('login');
+      document.getElementById('login-email').value = email;
+      document.getElementById('login-senha').focus();
+    }, 1500);
+  });
+
+  // ==================== LOGIN ====================
+  document.getElementById('form-login').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const senha = document.getElementById('login-senha').value;
+
+    const usuarios = DB.getUsuarios();
+    const user = usuarios.find(u => u.email === email && u.senha === senha);
+
+    if (!user) {
+      mostrarMensagem('login-error', 'E-mail ou senha inválidos.', 'error');
+      return;
+    }
+
+    usuarioAtual = user;
+    DB.setSessao(email);
+    document.getElementById('form-login').reset();
+    entrarNaTelaTarefas();
+  });
+
+  // ==================== TELA DE TAREFAS ====================
+  function entrarNaTelaTarefas() {
+    const sessaoEmail = DB.getSessao();
+    if (!sessaoEmail) {
+      mostrarTela('login');
+      return;
+    }
+
+    const usuarios = DB.getUsuarios();
+    usuarioAtual = usuarios.find(u => u.email === sessaoEmail);
+
+    if (!usuarioAtual) {
+      DB.limparSessao();
+      mostrarTela('login');
+      return;
+    }
+
+    document.getElementById('user-badge').textContent = '👤 ' + usuarioAtual.nome;
+    renderizarTarefas();
+    mostrarTela('tarefas');
+  }
+
+  function renderizarTarefas() {
+    const lista = document.getElementById('task-list');
+    const vazio = document.getElementById('empty-state');
+    const tarefas = DB.getTarefas(usuarioAtual.email);
+
+    // Remove itens antigos (exceto o empty-state)
+    lista.querySelectorAll('.task-item').forEach(el => el.remove());
+
+    if (tarefas.length === 0) {
+      vazio.style.display = 'block';
+      return;
+    }
+
+    vazio.style.display = 'none';
+
+    tarefas.forEach((tarefa, index) => {
+      const item = document.createElement('div');
+      item.className = 'task-item' + (tarefa.concluida ? ' concluida' : '');
+
+      item.innerHTML = `
+        <div class="task-content">
+          <div class="task-title">${escaparHTML(tarefa.titulo)}</div>
+          ${tarefa.desc ? `<div class="task-desc">${escaparHTML(tarefa.desc)}</div>` : ''}
+        </div>
+        <div class="task-actions">
+          <button title="${tarefa.concluida ? 'Reabrir' : 'Concluir'}" onclick="alternarTarefa(${index})">
+            ${tarefa.concluida ? '↩️' : '✅'}
+          </button>
+          <button title="Excluir" onclick="excluirTarefa(${index})">🗑️</button>
+        </div>
+      `;
+
+      lista.appendChild(item);
+    });
+  }
+
+  // Adicionar tarefa
+  document.getElementById('form-task').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const titulo = document.getElementById('task-titulo').value.trim();
+    const desc = document.getElementById('task-desc').value.trim();
+
+    if (!titulo) return;
+
+    const tarefas = DB.getTarefas(usuarioAtual.email);
+    tarefas.push({ titulo, desc, concluida: false, criadaEm: new Date().toISOString() });
+    DB.salvarTarefas(usuarioAtual.email, tarefas);
+
+    this.reset();
+    document.getElementById('task-titulo').focus();
+    renderizarTarefas();
+    mostrarMensagem('task-success', 'Tarefa adicionada!', 'success');
+  });
+
+  // Alternar conclusão
+  function alternarTarefa(index) {
+    const tarefas = DB.getTarefas(usuarioAtual.email);
+    tarefas[index].concluida = !tarefas[index].concluida;
+    DB.salvarTarefas(usuarioAtual.email, tarefas);
+    renderizarTarefas();
+  }
+
+  // Excluir tarefa
+  function excluirTarefa(index) {
+    const tarefas = DB.getTarefas(usuarioAtual.email);
+    tarefas.splice(index, 1);
+    DB.salvarTarefas(usuarioAtual.email, tarefas);
+    renderizarTarefas();
+    mostrarMensagem('task-success', 'Tarefa removida.', 'success');
+  }
+
+  // Logout
+  function fazerLogout() {
+    DB.limparSessao();
+    usuarioAtual = null;
+    document.getElementById('form-task').reset();
+    mostrarTela('login');
+  }
+
+  // Segurança: escapar HTML para evitar XSS
+  function escaparHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ==================== INICIALIZAÇÃO ====================
+  // Se já houver sessão ativa, vai direto para tarefas
+  (function init() {
+    const sessao = DB.getSessao();
+    if (sessao) {
+      const usuarios = DB.getUsuarios();
+      const user = usuarios.find(u => u.email === sessao);
+      if (user) {
+        usuarioAtual = user;
+        entrarNaTelaTarefas();
+        return;
+      }
+    }
+    mostrarTela('login');
+  })();
+</script>
+
+</body>
+</html>
